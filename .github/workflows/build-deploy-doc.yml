@@ -1,0 +1,34 @@
+name: "Build and deploy doc"
+
+on:
+  push:
+    branches:
+      - main
+  # TODO: remove this before merge, for testing only
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Nextflow
+      run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+    - name: Pre-build
+      run: |
+          cd docs && bash src/pre-build.sh
+          # move the README.md into src, so it can use by index.rst
+          cp README.md src
+    - uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "docs/src/"
+        pre-build-command: "pip install sphinx_rtd_theme myst-parser"
+    - name: Deploy the doc
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/src/build/html
